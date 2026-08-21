@@ -12,7 +12,7 @@
 
 ## 适配
 
-- 微信 **8.0.72**（versionCode 3084/3085）
+- 已在微信 **8.0.72 play**（versionCode 3084/3085）测试通过
 - Android 8.0+（API 26+）
 - LSPosed 框架（libxposed API 101+，如 JingMatrix LSPosed 等）
 
