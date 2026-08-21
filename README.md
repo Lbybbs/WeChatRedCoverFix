@@ -1,25 +1,40 @@
 # WeChatRedCoverFix
 
-微信红包封面隐藏 LSPosed 模块（libxposed API 102，无 UI）。
+微信自定义红包封面隐藏模块（**LSPosed / libxposed API 102**，无 UI，无需重启设备）。
 
-## 作用
-微信自定义红包封面在聊天消息里会渲染出封面图（控件 id: c7q=0x7f090fb2、c7r=0x7f090fb3、尾巴 ccf=0x7f091085），盖在 Monet 等美化样式之上。
-本模块拦截 `View.setVisibility`，命中这三个控件的调用一律强制 GONE，让美化样式完整显示。
+## 解决的问题
 
-适配：微信 8.0.72（versionCode 3084/3085），Android 8.0+（API 26+）。
+微信的**自定义红包封面**在聊天消息里会渲染出封面图（控件：`c7q`=0x7f090fb2 封面图、`c7r`=0x7f090fb3 纹理层、`ccf`=0x7f091085 气泡尾巴），**盖在 Monet 等美化样式之上**，导致美化效果被遮挡。
 
-## 构建
-GitHub Actions 自动构建（push 到 main 或手动触发 workflow_dispatch），产物在 Actions 的 Artifact 里。
+本模块在微信进程内拦截：
+1. **`View.setVisibility`** —— 封面控件永远被强制 `GONE`（用 `Invoker.Type.ORIGIN` 绕过 hook 链设置，再短路原调用，无论微信想设成什么都无效）
+2. **`ImageView.setImageBitmap / setImageResource / setImageDrawable`** —— 封面图片加载直接短路，连图都不加载（省内存）
 
-本地构建：
-```
-./gradlew assembleRelease
-```
+## 适配
+
+- 微信 **8.0.72**（versionCode 3084/3085）
+- Android 8.0+（API 26+）
+- LSPosed 框架（libxposed API 101+，如 JingMatrix LSPosed 等）
+
+> ⚠️ 控件资源 ID 随微信版本变化，升级微信后需同步更新 `WeChatRedCoverFix.java` 里的 `WATCH_IDS`。
 
 ## 安装
-1. 在 LSPosed 管理器中启用本模块（作用域：微信 com.tencent.mm，已通过 scope.list 声明）
-2. 重启微信（无需重启设备）
 
-## 注意
-- 资源 id 随微信版本变化，升级微信后需同步更新 `WeChatRedCoverFix.java` 中的三个 id。
-- 与 RRO 美化模块（MonetWeChat 等）可同时使用，互不冲突。
+1. 在 [Releases](https://github.com/Lbybbs/WeChatRedCoverFix/releases) 下载 APK
+2. LSPosed 管理器 → 模块 → 启用「微信红包封面隐藏」
+3. 重启微信（**无需重启设备**）
+4. 作用域已通过 `META-INF/xposed/scope.list` 锁定为 `com.tencent.mm`（staticScope）
+
+## 兼容性
+
+- 与 RRO/Magisk 美化模块（如 MonetWeChat 系列）**可同时使用**，互不冲突
+- 收红包、看红包详情等界面不受影响，仅隐藏聊天消息里的封面图层
+
+## 构建
+
+GitHub Actions 自动构建（push 到 main 或手动触发），产物在 Actions Artifact。
+本地构建：`./gradlew assembleRelease`（需 JDK 21 + Android SDK 37）
+
+## 诊断
+
+模块日志 tag：`RedCoverDiag`，可用 `adb logcat -s RedCoverDiag:*` 查看拦截情况。
